@@ -1,17 +1,17 @@
 import React, { createContext, useContext } from "react";
-import { useCurrentFrame as useRawCurrentFrame } from "remotion";
+import { useCurrentFrame as useRawCurrentFrame, useVideoConfig } from "remotion";
 
 /**
  * Long-form reveal choreography. Existing LF animations were authored with
  * entrance events mostly in the first ~60-100 frames; the containing chapter
- * beat often lasts 6-12 seconds. Move through those authored cue frames over
- * the entire actual beat instead of finishing everything in seconds 1-3.
+ * beat often lasts several seconds. Move through those authored cue frames
+ * until exactly one second before the assigned beat ends.
  *
- * These reference endpoints are per-animation (not arbitrary playback speed).
- * The normal frame-based motions remain deterministic and keep their order.
- * The final 2% is a tiny settled beat, not a multi-second frozen picture.
+ * These numbers are the original code's cue coordinates, NOT the animation's
+ * scheduled finish time. The finish time is calculated from the Visual Plan's
+ * real beat duration. New animations can define authoredEndFrame locally.
  */
-export const LF_REVEAL_LAST_FRAME: Readonly<Record<string, number>> = {
+export const LF_AUTHORED_END_FRAME: Readonly<Record<string, number>> = {
   "VA-LF-001": 68,
   "VA-LF-002": 72,
   "VA-LF-003": 73,
@@ -34,36 +34,40 @@ export const LF_REVEAL_LAST_FRAME: Readonly<Record<string, number>> = {
   "VA-LF-020": 110,
 };
 
-type Timing = { animationId: string; durationFrames: number; revealLastFrame?: number };
+type Timing = { animationId: string; durationFrames: number; fps: number; authoredEndFrame?: number };
 const Context = createContext<Timing | null>(null);
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 export const LFAnimationTimingProvider: React.FC<{
   animationId: string;
   durationFrames: number;
-  revealLastFrame?: number;
+  authoredEndFrame?: number;
   children: React.ReactNode;
-}> = ({ animationId, durationFrames, revealLastFrame, children }) => (
-  <Context.Provider value={{ animationId, durationFrames, revealLastFrame }}>
-    {children}
-  </Context.Provider>
-);
+}> = ({ animationId, durationFrames, authoredEndFrame, children }) => {
+  const { fps } = useVideoConfig();
+  return (
+    <Context.Provider value={{ animationId, durationFrames, fps, authoredEndFrame }}>
+      {children}
+    </Context.Provider>
+  );
+};
 
-export function getLFRevealProgress(frame: number, durationFrames: number): number {
-  const last = Math.max(1, durationFrames - 1);
-  // Keep 2% for a clean final pose, with content revealed across the other 98%.
-  return clamp01(frame / Math.max(1, last * 0.98));
+export function getLFRevealProgress(frame: number, durationFrames: number, fps = 30): number {
+  // Reveal through the Visual Agent-assigned beat duration minus one second.
+  const finalRevealFrame = Math.max(1, durationFrames - fps);
+  return clamp01(frame / finalRevealFrame);
 }
 
 export function getLFPacedFrame(
   frame: number,
   durationFrames: number,
   animationId: string,
-  revealLastFrame?: number,
+  authoredEndFrame?: number,
+  fps = 30,
 ): number {
-  const target = revealLastFrame ?? LF_REVEAL_LAST_FRAME[animationId];
+  const target = authoredEndFrame ?? LF_AUTHORED_END_FRAME[animationId];
   if (!target || !Number.isFinite(durationFrames) || durationFrames < 2) return frame;
-  return target * getLFRevealProgress(frame, durationFrames);
+  return target * getLFRevealProgress(frame, durationFrames, fps);
 }
 
 /** Animated content uses an authored cue-clock stretched to the real beat. */
@@ -71,7 +75,7 @@ export function useLFPacedFrame(): number {
   const raw = useRawCurrentFrame();
   const context = useContext(Context);
   return context
-    ? getLFPacedFrame(raw, context.durationFrames, context.animationId, context.revealLastFrame)
+    ? getLFPacedFrame(raw, context.durationFrames, context.animationId, context.authoredEndFrame, context.fps)
     : raw;
 }
 
@@ -80,11 +84,11 @@ export function useLFRealFrame(): number {
   return useRawCurrentFrame();
 }
 
-/** From 0 to 1 over the entire real beat, for staged labels and editorial layers. */
+/** From 0 to 1 by one second before the real beat ends. */
 export function useLFRevealProgress(): number {
   const raw = useRawCurrentFrame();
   const context = useContext(Context);
   return context
-    ? getLFRevealProgress(raw, context.durationFrames)
+    ? getLFRevealProgress(raw, context.durationFrames, context.fps)
     : 1;
 }
