@@ -19,11 +19,12 @@ export const animation = {
   defaultProps: {},
   background: "bg.png",
   backgroundDim: 0,
-  revealLastFrame: 70, // Optional: authored reveal endpoint for LF pacing
+  authoredEndFrame: 70, // Optional: original code's cue endpoint, NOT the finish time
 } satisfies StudioAnimation;
 ```
 
 - The default image is `video-service/public/bg.png`. For a unique image, add `video-service/public/VA-LF-021.png` and set `background: "VA-LF-021.png"` in that animation's configuration.
 - Background, long-form timing, and composition registration are handled by shared files in `src/`.
-- Long-form animations can use `useLFPacedFrame` from `../src/LFAnimationTiming` to preserve the production reveal pacing. The timing provider is automatic; for new animation IDs, set `revealLastFrame` in that animation's own configuration. Existing known endpoints match the current production source.
+- Animations using `useLFPacedFrame` or `useLFRevealProgress` reveal their final state **one second before their assigned duration ends**, regardless of the number of frames. The final second stays settled. For new animations with original frame-based choreography, set `authoredEndFrame` to the original cue endpoint; this is **not** the finish time.
+- `durationInFrames` is the local Studio preview duration. The production Visual Agent assigns the real beat duration in the visual plan, constrained by the catalog's `Max_duration` for each ID; the standalone playground does not read that live plan automatically.
 - **This is a separate learning playground.** Saving or previewing here does not deploy to the production video service.

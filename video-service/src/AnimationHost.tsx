@@ -15,8 +15,8 @@ export type StudioAnimation = {
   background?: string;
   /** 0 = original image, 1 = fully dark. */
   backgroundDim?: number;
-  /** Optional authored endpoint for pacing a new long-form reveal. */
-  revealLastFrame?: number;
+  /** Original code's cue endpoint; NOT the duration or reveal finish time. */
+  authoredEndFrame?: number;
 };
 
 /** One background and timing implementation for every animation. */
@@ -39,7 +39,7 @@ export const createAnimationHost = (animation: StudioAnimation) => {
         <LFAnimationTimingProvider
           animationId={animation.id}
           durationFrames={durationInFrames}
-          revealLastFrame={animation.revealLastFrame}
+          authoredEndFrame={animation.authoredEndFrame}
         >
           <Animation {...props} />
         </LFAnimationTimingProvider>
