@@ -12,6 +12,10 @@ const registered = files.keys().sort().map((filename) => {
   if (!module.animation) {
     throw new Error(`${filename} must export an 'animation' configuration.`);
   }
+  const fps = module.animation.fps ?? 30;
+  if (module.animation.durationInFrames < 3 * fps) {
+    throw new Error(`${module.animation.id} must last at least 3 seconds (${3 * fps} frames at ${fps} fps).`);
+  }
   return {
     definition: module.animation,
     component: createAnimationHost(module.animation),
