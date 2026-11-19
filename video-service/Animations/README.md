@@ -24,6 +24,7 @@ export const animation = {
 ```
 
 - The default image is `video-service/public/bg.png`. For a unique image, add `video-service/public/VA-LF-021.png` and set `background: "VA-LF-021.png"` in that animation's configuration.
+- Every animation must last **at least 3 seconds** (`durationInFrames >= 3 × fps`). The Visual Agent also respects each ID's live catalog maximum; a duration outside those limits must be revised, not silently stretched.
 - Background, long-form timing, and composition registration are handled by shared files in `src/`.
 - Animations using `useLFPacedFrame` or `useLFRevealProgress` reveal their final state **one second before their assigned duration ends**, regardless of the number of frames. The final second stays settled. For new animations with original frame-based choreography, set `authoredEndFrame` to the original cue endpoint; this is **not** the finish time.
 - `durationInFrames` is the local Studio preview duration. The production Visual Agent assigns the real beat duration in the visual plan, constrained by the catalog's `Max_duration` for each ID; the standalone playground does not read that live plan automatically.
