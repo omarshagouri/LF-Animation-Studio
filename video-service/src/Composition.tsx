@@ -1,30 +1,41 @@
 import { Composition } from "remotion";
-import { VA099test } from "./VA099test";
+import { createAnimationHost, type StudioAnimation } from "./AnimationHost";
 
-export const MyComposition = () => {
-  return (
-    <>
+// Every .tsx file except internal helpers starting with _ appears automatically.
+const files = import.meta.webpackContext("../Animations", {
+  recursive: false,
+  regExp: /^\.\/(?!_)[^/]+\.tsx$/,
+});
+
+const registered = files.keys().sort().map((filename) => {
+  const module = files(filename) as { animation?: StudioAnimation };
+  if (!module.animation) {
+    throw new Error(`${filename} must export an 'animation' configuration.`);
+  }
+  return {
+    definition: module.animation,
+    component: createAnimationHost(module.animation),
+  };
+});
+
+const ids = registered.map(({ definition }) => definition.id);
+if (new Set(ids).size !== ids.length) {
+  throw new Error("Duplicate animation IDs found in Animations/.");
+}
+
+export const MyComposition = () => (
+  <>
+    {registered.map(({ definition, component }) => (
       <Composition
-        id="MyComp"
-        component={MyComponent}
-        durationInFrames={60}
-        fps={30}
-        width={1280}
-        height={720}
+        key={definition.id}
+        id={definition.id}
+        component={component}
+        durationInFrames={definition.durationInFrames}
+        fps={definition.fps ?? 30}
+        width={definition.width ?? 1920}
+        height={definition.height ?? 1080}
+        defaultProps={definition.defaultProps ?? {}}
       />
-
-      <Composition
-        id="Va099test"
-        component={VA099test}
-        durationInFrames={180}
-        fps={30}
-        width={1920}
-        height={1080}
-      />
-    </>
-  );
-};
-
-export const MyComponent = () => {
-  return null;
-};
+    ))}
+  </>
+);
