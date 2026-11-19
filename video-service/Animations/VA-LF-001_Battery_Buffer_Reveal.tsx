@@ -1,9 +1,10 @@
 import React from "react";
-import { AbsoluteFill, interpolate, spring, useVideoConfig } from "remotion";
+import { AbsoluteFill, useVideoConfig } from "remotion";
 import { z } from "zod";
-import { clampNumeric, clampInteger } from "../src/clampNumeric";
-import { useLFPacedFrame as useCurrentFrame, useLFRevealProgress } from "../src/LFAnimationTiming";
-import { lfTheme, toneColor, clamp01, linearPhase, enter, fade, titleSizeFor, Title, Footer, Panel, LegendPill } from "./_coreShared";
+import { clampNumeric } from "../src/clampNumeric";
+import { useLFPacedFrame as useCurrentFrame } from "../src/LFAnimationTiming";
+import { lfTheme, linearPhase, enter, fade, Title, Footer, LegendPill } from "./_coreShared";
+import type { StudioAnimation } from "../src/AnimationHost";
 
 const baseProps = { title: z.string().optional() };
 
@@ -185,4 +186,23 @@ export const VALF001BatteryBuffer: React.FC<any> = ({
     </AbsoluteFill>
   );
 };
+
+export const animation = {
+  id: "VA-LF-001",
+  component: VALF001BatteryBuffer,
+  durationInFrames: 180,
+  fps: 30,
+  width: 1920,
+  height: 1080,
+  background: "bg.png",
+  backgroundDim: 0,
+  defaultProps: {
+    title: "Gross capacity vs usable capacity",
+    usablePct: 85,
+    bufferPct: 10,
+    usableLabel: "Usable",
+    bufferLabel: "Reserve",
+    footer: "AmpCoreX Battery Intelligence",
+  },
+} satisfies StudioAnimation;
 

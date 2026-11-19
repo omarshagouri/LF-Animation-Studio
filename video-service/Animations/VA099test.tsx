@@ -1,5 +1,6 @@
 import React from "react";
-import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
+import type { StudioAnimation } from "../src/AnimationHost";
 
 export const VA099test: React.FC = () => {
   const frame = useCurrentFrame();
@@ -16,23 +17,7 @@ export const VA099test: React.FC = () => {
         backgroundColor: "rgba(0, 0, 0, 0)"
       }}
     >
-      {/* 1. BACKGROUND IMAGE LAYER */}
-      <Img
-        // If using local public folder: src={staticFile("bg.png")}
-        // If using GitHub raw link, paste it directly as a string below:
-        src={staticFile("bg.png")} 
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover", // Ensures the image covers the entire screen nicely
-          position: "absolute",
-        }}
-      />
-
-      {/* 2. OPTIONAL DARK OVERLAY (Dims the photo slightly for text readability) */}
-      <AbsoluteFill style={{ backgroundColor: "rgba(8, 18, 31, 0.7)" }} />
-
-      {/* 3. YOUR FOREGROUND CONTENT LAYER */}
+      {/* The shared host supplies the background and optional dark overlay. */}
       <AbsoluteFill
         style={{
           alignItems: "center",
@@ -72,3 +57,14 @@ export const VA099test: React.FC = () => {
     </AbsoluteFill>
   );
 };
+
+export const animation = {
+  id: "Va099test",
+  component: VA099test,
+  durationInFrames: 180,
+  fps: 30,
+  width: 1920,
+  height: 1080,
+  background: "bg.png",
+  backgroundDim: 0.7,
+} satisfies StudioAnimation;
