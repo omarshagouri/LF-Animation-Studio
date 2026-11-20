@@ -20,7 +20,7 @@ export const StudioCompositions: React.FC = () => (
       return (
         <Composition
           key={id}
-          id={id}
+          id={id.replace(/_/g, "-")}
           component={Host}
           fps={30}
           width={1920}
