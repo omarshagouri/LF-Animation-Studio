@@ -14,10 +14,11 @@ export const createAnimationHost = (id: string, entry: AnimEntry) => {
   const Animation = entry.component;
 
   const AnimationHost: React.FC<Record<string, unknown>> = (props) => {
-    const { durationInFrames } = useVideoConfig();
+    const { durationInFrames, fps } = useVideoConfig();
 
     // Apply defaults from the animation's own Zod schema and clamp numeric inputs.
     const parsed = entry.schema.safeParse(props);
+    if (!parsed.success && entry.maxDurationSec !== undefined) throw parsed.error;
     const values = parsed.success
       ? parsed.data
       : normalizeBoundedAnimationValues(entry.schema, props);
@@ -32,6 +33,7 @@ export const createAnimationHost = (id: string, entry: AnimEntry) => {
           animationId={id}
           durationFrames={durationInFrames}
           authoredEndFrame={entry.authoredEndFrame}
+          finalHoldFrames={entry.maxDurationSec === undefined ? undefined : fps}
         >
           {/* Everything visually unique lives in the matching VA_LF_###.tsx. */}
           <Animation {...values} __holdFrames={durationInFrames} />
