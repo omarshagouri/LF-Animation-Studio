@@ -44,9 +44,10 @@ export const titleSizeFor = (title: string) => {
   return 66;
 };
 
-export const Title: React.FC<{ title?: string; kicker?: string }> = ({
+export const Title: React.FC<{ title?: string; kicker?: string; singleLine?: boolean }> = ({
   title,
   kicker,
+  singleLine,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -88,6 +89,9 @@ export const Title: React.FC<{ title?: string; kicker?: string }> = ({
             color: lfTheme.white,
             lineHeight: 1.05,
             letterSpacing: -1.1,
+            whiteSpace: singleLine ? "nowrap" : undefined,
+            overflow: singleLine ? "hidden" : undefined,
+            textOverflow: singleLine ? "ellipsis" : undefined,
           }}
         >
           {title}

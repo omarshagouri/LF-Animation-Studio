@@ -5,9 +5,12 @@ import { z } from "zod";
 export type AnimEntry = {
   component: React.FC<any>;
   schema: z.ZodTypeAny;
+  name?: string;
   description: string;
   slots: string[];
   defaultDurationSec: number;
+  /** Catalog Max_duration. Entries with a maximum accept a selected duration and hold their final second. */
+  maxDurationSec?: number;
   background?: string;
   backgroundDim?: number;
   authoredEndFrame?: number;
