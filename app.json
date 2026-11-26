@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Omar Studio",
+    "slug": "omar-studio",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "platforms": ["ios"],
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.omarshagouri.omarstudio",
+      "supportsTablet": false
+    },
+    "plugins": ["expo-font"]
+  }
+}
