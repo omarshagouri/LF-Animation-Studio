@@ -75,7 +75,7 @@ jobs:
           executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist")
           test "$bundle_id" = "$BUNDLE_ID"
           test "$platform" = 'iPhoneOS'
-          /usr/bin/lipo -verify_arch arm64 "$app/$executable"
+          /usr/bin/lipo "$app/$executable" -verify_arch arm64
           test -s "$app/main.jsbundle"
           test -n "$(find "$app" -name Ionicons.ttf -size +0c -print -quit)"
           test ! -e "$app/embedded.mobileprovision"
