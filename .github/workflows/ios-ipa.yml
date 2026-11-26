@@ -1,0 +1,103 @@
+name: Build iPhone IPA
+
+on:
+  push:
+    branches: [feat/ios-app-foundation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Archive and package unsigned IPA
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      EXPO_NO_TELEMETRY: '1'
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      BUNDLE_ID: com.omarshagouri.omarstudio
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Verify build tools
+        run: |
+          node --version
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          pod --version
+
+      - name: Install locked dependencies and run checks
+        run: |
+          npm ci
+          npm run typecheck
+          npm run lint
+          npm test
+          npx expo install --check
+
+      - name: Generate native project and install pods
+        run: |
+          npx expo prebuild --platform ios --no-install
+          printf 'export NODE_BINARY=%q\n' "$(command -v node)" > ios/.xcode.env.local
+          pod install --project-directory=ios
+
+      - name: Archive Release for iPhone
+        run: |
+          xcodebuild archive \
+            -workspace ios/OmarStudio.xcworkspace \
+            -scheme OmarStudio \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/OmarStudio.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+      - name: Validate and package iPhone application
+        run: |
+          applications="$RUNNER_TEMP/OmarStudio.xcarchive/Products/Applications"
+          apps=("$applications"/*.app)
+          app="${apps[0]}"
+          test "${#apps[@]}" -eq 1
+          test -d "$app"
+
+          plist="$app/Info.plist"
+          bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")
+          platform=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$plist")
+          executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist")
+          test "$bundle_id" = "$BUNDLE_ID"
+          test "$platform" = 'iPhoneOS'
+          /usr/bin/lipo -verify_arch arm64 "$app/$executable"
+          test -s "$app/main.jsbundle"
+          test -n "$(find "$app" -name Ionicons.ttf -size +0c -print -quit)"
+          test ! -e "$app/embedded.mobileprovision"
+          echo "Minimum iOS: $(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$plist")"
+
+          staging="$RUNNER_TEMP/ipa-staging"
+          mkdir -p "$staging/Payload"
+          ditto "$app" "$staging/Payload/$(basename "$app")"
+          ditto -c -k --keepParent "$staging/Payload" "$GITHUB_WORKSPACE/Omar-Studio.ipa"
+          unzip -tq "$GITHUB_WORKSPACE/Omar-Studio.ipa"
+
+      - name: Upload Omar-Studio.ipa
+        id: ipa
+        uses: actions/upload-artifact@v7
+        with:
+          name: Omar-Studio.ipa
+          path: Omar-Studio.ipa
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Link the artifact
+        env:
+          ARTIFACT_URL: ${{ steps.ipa.outputs.artifact-url }}
+        run: printf '[Download Omar-Studio.ipa artifact](%s)\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
