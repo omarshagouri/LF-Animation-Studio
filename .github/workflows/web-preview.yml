@@ -1,0 +1,63 @@
+name: Deploy browser preview
+
+on:
+  push:
+    branches: [feat/ios-app-foundation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: omar-studio-browser-preview
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXPO_NO_TELEMETRY: '1'
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Resolve Pages path
+        id: pages
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+      - name: Export and upload Expo preview
+        run: |
+          # A custom Pages domain can serve the app from its root.
+          if [ "$PAGES_CONFIGURED" = true ]; then
+            OMAR_WEB_BASE_PATH="${PAGES_CONFIGURED_BASE_PATH}"
+          fi
+          npm run build:web
+          test -s dist/web/index.html
+        env:
+          OMAR_WEB_BASE_PATH: /Omar_Studio
+          PAGES_CONFIGURED: ${{ steps.pages.outcome == 'success' }}
+          PAGES_CONFIGURED_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

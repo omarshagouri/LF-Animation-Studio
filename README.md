@@ -64,3 +64,9 @@ The generated project targets iOS 16.4 or later. The build checks the app’s bu
 8. Free provisioning typically expires after seven days. Before expiry, keep AltServer running and use **My Apps → Refresh All** with the iPhone connected or on the same Wi-Fi. Free-account app and App ID limits also apply.
 
 For the meeting module, validate recording permissions, interruptions and background behavior on device before adding transcription. Define storage and consent before connecting a backend for transcripts, summaries, decisions, assigned actions and deadlines. Add email delivery after users can review the content and recipients.
+
+## Browser preview
+
+For local browser development, run `npm ci` and `npm run web`. For a static export, run `npm run build:web`. The same screens and demo state are used on web and iOS. Desktop browsers add a phone-sized frame. On narrow screens the preview fills the viewport.
+
+The **Deploy browser preview** workflow exports and publishes each push to `feat/ios-app-foundation` through GitHub Pages. Set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**. If the `github-pages` environment restricts deployment branches, allow `feat/ios-app-foundation`. Pages availability and site visibility depend on the repository and account plan. The workflow's deployment job links the canonical site URL after it publishes. This preview is for simulated meetings. See the [technical review](docs/technical-review.md) for follow-up priorities.

@@ -4,12 +4,17 @@
     "slug": "omar-studio",
     "version": "0.1.0",
     "orientation": "portrait",
-    "platforms": ["ios"],
+    "platforms": [
+      "ios",
+      "web"
+    ],
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.omarshagouri.omarstudio",
       "supportsTablet": false
     },
-    "plugins": ["expo-font"]
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
