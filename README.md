@@ -73,6 +73,6 @@ The **Deploy browser preview** workflow exports and publishes each push to `feat
 
 ## Five-module review branch
 
-The five-module browser candidate is distributed separately as **Five-module-web-preview** on the review workflow. Download and extract it, then serve the extracted directory with `npx expo serve <directory> --port 4173` from this checkout after `npm ci`. For a local build, use `npm run build:web`, `npx playwright install chromium`, and `npm run test:browser`. The browser uses in-memory data and cannot send it to the backend. The existing Pages deployment remains on the foundation branch while the release candidate is reviewed.
+The five-module browser candidate is distributed separately as **Five-module-web-preview** on the review workflow. Download and extract it, then serve the extracted directory with `npx expo serve <directory> --port 4173` from this checkout after `npm ci`. For a local build, use `npm run build:web`, `npx playwright install chromium`, and `npm run test:browser`. The browser uses in-memory data and cannot send it to the backend. The unified Pages workflow builds both branches before deployment. It serves the foundation at the published root and the five-module review candidate under `/preview/`. The `github-pages` deployment environment must permit both branches.
 
 See the [handover](docs/five-module-handover.md) for native device acceptance tests and [staging and connector verification](docs/staging-and-connectors.md) for Cloud Run approval, IAM, Secret Manager, and provider contracts.
