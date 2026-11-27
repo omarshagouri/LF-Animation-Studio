@@ -18,6 +18,7 @@
     "react-native-web": "~0.21.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@types/node": "^24.19.4",
     "@types/react": "~19.3.0",
     "eslint": "^9.39.5",
@@ -31,7 +32,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.ts",
     "web": "expo start --web",
-    "build:web": "expo export --platform web --output-dir dist/web"
+    "build:web": "expo export --platform web --output-dir dist/web",
+    "test:browser": "playwright test"
   },
   "engines": {
     "node": "^24.3.0"

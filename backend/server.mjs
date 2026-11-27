@@ -14,7 +14,8 @@ function checkNotes(n) {
 }
 async function body(req, max) {
   const chunks = []; let size = 0
-  for await (const chunk of req) {
+  if (Number(req.headers['content-length']) > max) throw bad('Request too large', 413)
+  for await (const chunk of req.iterator({ destroyOnReturn: false })) {
     size += chunk.length
     if (size > max) throw Object.assign(new Error('Request too large'), { status: 413 })
     chunks.push(chunk)
@@ -106,6 +107,7 @@ export function createStudioServer(env = process.env, { fetchProvider = fetch, n
       attempt.sent = true
       return respond(200,{sent:true})
     } catch(e) {
+      if (e.status === 413) res.setHeader('Connection', 'close')
       return respond(e.status || 500,{error:e.status ? e.message : 'Request failed'})
     } finally {
       if (reserved) inFlight--

@@ -8,3 +8,5 @@ android/
 *.p12
 *.mobileprovision
 *.tsbuildinfo
+playwright-report/
+test-results/

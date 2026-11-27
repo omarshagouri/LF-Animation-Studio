@@ -43,7 +43,8 @@ jobs:
           npm run lint
           npm test
           if [ -f backend/server.test.mjs ]; then node --test backend/server.test.mjs; fi
-          npx expo install --check
+          EXPO_OFFLINE=1 npx expo install --check
+          npm ls --all > /dev/null
 
       - name: Generate native project and install pods
         run: |

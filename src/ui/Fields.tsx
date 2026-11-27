@@ -15,11 +15,11 @@ export function Choice<T extends string>({ label, choices, value, onChange }: {
   const { colors } = useStudioTheme()
   return <View style={styles.field}>
     <Label variant="caption">{label}</Label>
-    <View style={styles.choices}>
+    <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.choices}>
       {choices.map(choice => {
         const selected = choice === value
-        return <Pressable key={choice} accessibilityRole="button" accessibilityLabel={label + ': ' + choice}
-          accessibilityState={{ selected }} onPress={() => onChange(choice)}
+        return <Pressable key={choice} accessibilityRole="radio" accessibilityLabel={label + ': ' + choice}
+          accessibilityState={{ checked: selected }} onPress={() => onChange(choice)}
           style={[styles.choice, { backgroundColor: selected ? colors.tint : colors.background, borderColor: selected ? colors.accent : colors.border }]}>
           <Text style={{ color: selected ? colors.accent : colors.text, fontWeight: selected ? '600' : '400' }}>{choice}</Text>
         </Pressable>
