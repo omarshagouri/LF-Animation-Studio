@@ -9,15 +9,15 @@ import { useMeetingSession } from './session'
 import { useWorkspace } from '../../workspace/Workspace'
 import { device } from '../../workspace/native'
 import { analyze, sendNotes, transcribe } from '../../workspace/api'
-import { makeId } from '../../workspace/model'
+import { addFollowUps, makeId } from '../../workspace/model'
 
 function Timer({ started }: { started: number | null }) {
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
     if (started === null) return
-    const update = () => setElapsed(Math.max(0, Date.now() - started))
+    const update = () => setElapsed(Math.max(0, performance.now() - started))
     update()
-    const interval = setInterval(update, 250)
+    const interval = setInterval(update, 1000)
     return () => clearInterval(interval)
   }, [started])
   return <Label variant="timer">{formatDuration(started === null ? 0 : elapsed)}</Label>
@@ -36,11 +36,11 @@ export function MeetingsScreen({ navigation }: NativeStackScreenProps<StudioRout
       <Label tone="muted">{demo ? 'Preview uses a timer only; no microphone or network access.' : 'Audio is stored locally. Background and interruption behavior requires device testing.'}</Label>
       <Field label="Meeting title (optional)" value={title} onChange={setTitle} />
       {!demo && <Action title={consent ? 'Consent confirmed · Change' : 'Confirm participants informed'} icon={consent ? 'checkmark-circle-outline' : 'shield-checkmark-outline'} onPress={() => setConsent(v => !v)} />}
-      <Action title={busy ? 'Please wait…' : startedAt !== null ? 'Stop recording' : 'Start recording'} icon={startedAt !== null ? 'stop' : 'mic'} onPress={() => { if (startedAt !== null) { void stop().then(() => setConsent(false)) } else if (ready && (demo || consent)) { void start(title.trim()) } else { Alert.alert('Recording consent', 'Confirm participants have been informed and local storage is ready.') } }} />
+      <Action disabled={busy || !ready} title={busy ? 'Please wait…' : startedAt !== null ? 'Stop recording' : 'Start recording'} icon={startedAt !== null ? 'stop' : 'mic'} onPress={() => { if (startedAt !== null) { void stop().then(() => setConsent(false)) } else if (ready && (demo || consent)) { void start(title.trim()) } else { Alert.alert('Recording consent', 'Confirm participants have been informed and local storage is ready.') } }} />
       {audio === 'interrupted' && <Label tone="danger">Recording was interrupted. Stop to save the partial file.</Label>}
       <ErrorText message={error} />
     </Card>
-    <Action title="Create meeting from text" icon="document-text-outline" onPress={() => { if (!ready) return; const id = makeId(); change(d => ({ ...d, meetings: [{ id, title: title.trim() || 'Meeting notes', at: Date.now(), durationMs: 0, transcript: '' }, ...d.meetings] })); navigation.navigate('MeetingDetails', { meetingId: id }) }} />
+    <Action disabled={!ready} variant="secondary" title="Create meeting from text" icon="document-text-outline" onPress={() => { if (!ready) return; const id = makeId(); change(d => ({ ...d, meetings: [{ id, title: title.trim() || 'Meeting notes', at: Date.now(), durationMs: 0, transcript: '' }, ...d.meetings] })); navigation.navigate('MeetingDetails', { meetingId: id }) }} />
     <Label variant="heading">Meeting history</Label>
     {data.meetings.length === 0 && <Label tone="muted">No saved meetings.</Label>}
     {data.meetings.map(m => <NavigationRow key={m.id} title={m.title} subtitle={formatMeetingDate(m.at) + ' · ' + (m.notes ? 'Analyzed' : 'Awaiting analysis')} icon="document-text-outline" onPress={() => navigation.navigate('MeetingDetails', { meetingId: m.id })} />)}
@@ -64,12 +64,12 @@ export function MeetingDetailsScreen({ route, navigation }: NativeStackScreenPro
   return <Screen>
     <Label variant="title">{meeting.title}</Label>
     <Card><Label>{formatMeetingDate(meeting.at)} · {formatDuration(meeting.durationMs)}</Label><Label tone="muted">{meeting.audioUri ? 'Local audio file available' : 'Text or demo session'}</Label>
-      {meeting.audioUri && <Action title="Upload audio for transcription" icon="cloud-upload-outline" onPress={() => void run(async () => { if (!meeting.audioUri) return; const transcript = await transcribe(connection, meeting.audioUri); patch({ transcript, notes: undefined }); setMessage('Transcript received.') })} />}
+      {meeting.audioUri && <Action disabled={busy} variant="secondary" title="Upload audio for transcription" icon="cloud-upload-outline" onPress={() => void run(async () => { if (!meeting.audioUri) return; const transcript = await transcribe(connection, meeting.audioUri); patch({ transcript, notes: undefined }); setMessage('Transcript received.') })} />}
       <Field label="Transcript or meeting notes" value={meeting.transcript} onChange={transcript => { if (!locked.current) patch({ transcript, notes: undefined }) }} multiline />
-      <Action title={busy ? 'Processing…' : 'Generate AI notes (upload text)'} icon="sparkles-outline" onPress={() => void run(async () => { if (!meeting.transcript.trim()) throw new Error('Enter a transcript first.'); patch({ notes: await analyze(connection, meeting.transcript, 'meeting') }); setMessage('Analysis ready for review.') })} />
+      {Platform.OS === 'ios' && <Action disabled={busy} title={busy ? 'Processing…' : 'Generate AI notes (upload text)'} icon="sparkles-outline" onPress={() => void run(async () => { if (!meeting.transcript.trim()) throw new Error('Enter a transcript first.'); patch({ notes: await analyze(connection, meeting.transcript, 'meeting') }); setMessage('Analysis ready for review.') })} />}
     </Card>
-    {meeting.notes && <Card><Label variant="heading">Summary</Label><Label>{meeting.notes.summary}</Label><Label variant="heading">Decisions</Label>{meeting.notes.decisions.map((d,i) => <Label key={i}>{d}</Label>)}<Label variant="heading">Actions</Label>{meeting.notes.actions.map((a,i) => <Label key={i}>{a}</Label>)}<Action title="Add actions to Secretary" icon="checkmark-outline" onPress={() => { if (!meeting.notes) return; const tasks = meeting.notes.actions.map(title => ({ id: makeId(), title, source: 'Meeting ' + id, due: '', done: false })); change(d => ({ ...d, tasks: [...tasks.filter(t => !d.tasks.some(x => x.source === t.source && x.title === t.title)), ...d.tasks] })); setMessage('Actions added.') }} /><Action title="Send reviewed notes to configured email" icon="mail-outline" onPress={() => void run(async () => { if (!meeting.notes) return; await sendNotes(connection, meeting.title, meeting.notes); setMessage('Email sent by server.') })} /></Card>}
+    {meeting.notes && <Card><Label variant="heading">Summary</Label><Label>{meeting.notes.summary}</Label><Label variant="heading">Decisions</Label>{meeting.notes.decisions.map((d,i) => <Label key={i}>{d}</Label>)}<Label variant="heading">Actions</Label>{meeting.notes.actions.map((a,i) => <Label key={i}>{a}</Label>)}<Action title="Add actions to Secretary" icon="checkmark-outline" onPress={() => { if (!meeting.notes) return; const actions = meeting.notes.actions; change(d => addFollowUps(d, 'Meeting ' + id, actions)); setMessage('Meeting actions are in Secretary.') }} /><Action disabled={busy} variant="secondary" title="Send reviewed notes to configured email" icon="mail-outline" onPress={() => void run(async () => { if (!meeting.notes) return; const result = await sendNotes(connection, meeting.title, meeting.notes); setMessage(result.duplicate ? 'These notes were already sent.' : 'Email sent by server.') })} /></Card>}
     <ErrorText message={error} /><Label tone="muted">{message}</Label>
-    <Action title="Delete meeting and local audio" icon="trash-outline" onPress={() => void run(async () => { if (meeting.audioUri && device) await device.removeAudio(meeting.audioUri); change(d => ({ ...d, meetings: d.meetings.filter(m => m.id !== id) })); navigation.goBack() })} />
+    <Action disabled={busy} variant="danger" title="Delete meeting and local audio" icon="trash-outline" onPress={() => void run(async () => { if (meeting.audioUri && device) await device.removeAudio(meeting.audioUri); change(d => ({ ...d, meetings: d.meetings.filter(m => m.id !== id) })); navigation.goBack() })} />
   </Screen>
 }

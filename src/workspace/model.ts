@@ -45,3 +45,45 @@ export function validNotes(value: unknown): value is Notes {
   const n = value as Notes
   return typeof n.summary === 'string' && Array.isArray(n.decisions) && n.decisions.every(x => typeof x === 'string') && Array.isArray(n.actions) && n.actions.every(x => typeof x === 'string')
 }
+
+export function parseWorkspace(raw: string): WorkspaceData {
+  if (!raw) return emptyWorkspace
+  const parsed: unknown = JSON.parse(raw)
+  if (!parsed || typeof parsed !== 'object') throw new Error('Invalid workspace')
+  const candidate = parsed as Partial<WorkspaceData>
+  if (Object.keys(emptyWorkspace).some(key => !Array.isArray(candidate[key as keyof WorkspaceData]))) {
+    throw new Error('Invalid workspace')
+  }
+  if (Object.values(candidate).some(entries => Array.isArray(entries) && entries.some(entry =>
+    !entry || typeof entry !== 'object' || typeof entry.id !== 'string'
+  ))) throw new Error('Invalid workspace entry')
+  return { ...emptyWorkspace, ...candidate }
+}
+
+export function mergeRecoveredMeetings(saved: SavedMeeting[], recovered: SavedMeeting[]): SavedMeeting[] {
+  const meetings = new Map(recovered.map(meeting => [meeting.id, meeting]))
+  for (const meeting of saved) meetings.set(meeting.id, meeting)
+  return [...meetings.values()].sort((a, b) => b.at - a.at)
+}
+
+export function addFollowUps(data: WorkspaceData, source: string, titles: string[]): WorkspaceData {
+  const existing = new Set(data.tasks.filter(task => task.source === source).map(task => task.title))
+  const tasks: Task[] = []
+  for (const title of titles) {
+    const clean = title.trim()
+    if (!clean || existing.has(clean)) continue
+    existing.add(clean)
+    tasks.push({ id: makeId(), title: clean, source, due: '', done: false })
+  }
+  return tasks.length ? { ...data, tasks: [...tasks, ...data.tasks] } : data
+}
+
+export function normalizeBackendUrl(input: string): string | null {
+  try {
+    const url = new URL(input.trim())
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) return null
+    return url.href.replace(/\/+$/, '')
+  } catch {
+    return null
+  }
+}

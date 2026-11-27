@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { Platform } from 'react-native'
-import { emptyWorkspace, type WorkspaceData } from './model'
+import { emptyWorkspace, mergeRecoveredMeetings, parseWorkspace, type WorkspaceData } from './model'
 import { device } from './native'
 
 type Connection = { url: string; token: string }
@@ -17,12 +17,9 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     let active = true
     async function load() {
       try {
-        const raw = device ? await device.readWorkspace() : ''
-        if (active && raw) {
-          const parsed = JSON.parse(raw) as Partial<WorkspaceData>
-          if (Object.keys(emptyWorkspace).some(key => !Array.isArray(parsed[key as keyof WorkspaceData]))) throw new Error('Invalid workspace')
-          setData({ ...emptyWorkspace, ...parsed })
-        }
+        const saved = parseWorkspace(device ? await device.readWorkspace() : '')
+        const recovered = device ? await device.recoverRecordings() : []
+        if (active) setData({ ...saved, meetings: mergeRecoveredMeetings(saved.meetings, recovered) })
         if (active && Platform.OS === 'ios' && !device) setStorageError('Native storage unavailable; session only.')
         if (active) setReady(true)
       } catch {
@@ -33,9 +30,14 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     return () => { active = false }
   }, [])
   useEffect(() => {
-    if (!ready || !device) return
+    const storage = device
+    if (!ready || !storage) return
     const snapshot = JSON.stringify(data)
-    writes.current = writes.current.catch(() => {}).then(() => device.writeWorkspace(snapshot)).catch(() => setStorageError('Saving failed. Keep the app open and retry an edit.'))
+    writes.current = writes.current.then(async () => {
+      await storage.writeWorkspace(snapshot)
+      await storage.acknowledgeRecordings(data.meetings.filter(meeting => meeting.audioUri).map(meeting => meeting.id))
+      setStorageError('')
+    }).catch(() => setStorageError('Saving failed. Keep the app open and retry an edit.'))
   }, [data, ready])
   return <Context.Provider value={{ data, ready, storageError, change: fn => { if (ready) setData(fn) }, connection, connect }}>{children}</Context.Provider>
 }

@@ -25,6 +25,7 @@ export function Screen({ children, topInset = false }: PropsWithChildren<{ topIn
   const insets = useSafeAreaInsets()
   return (
     <ScrollView
+      keyboardShouldPersistTaps="handled"
       contentInsetAdjustmentBehavior={topInset ? "never" : "automatic"}
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[styles.screen, topInset && {
@@ -52,14 +53,21 @@ export function IconTile({ name }: { name: IconName }) {
   return <View style={[styles.iconTile, { backgroundColor: colors.tint }]}><Glyph name={name} /></View>
 }
 
-export function Action({ title, icon, onPress }: { title: string; icon: IconName; onPress: () => void }) {
+export function Action({ title, icon, onPress, disabled = false, variant = 'primary' }: {
+  title: string
+  icon: IconName
+  onPress: () => void
+  disabled?: boolean
+  variant?: 'primary' | 'secondary' | 'danger'
+}) {
   const { colors } = useStudioTheme()
+  const backgroundColor = variant === 'primary' ? colors.accent : colors.background
+  const color = variant === 'primary' ? colors.onAccent : variant === 'danger' ? colors.danger : colors.accent
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [
-      styles.action, { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 },
-    ]}>
-      <Ionicons accessible={false} name={icon} size={19} color={colors.onAccent} />
-      <Text style={[styles.buttonText, { color: colors.onAccent }]}>{title}</Text>
+    <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
+      style={({ pressed }) => [styles.action, { backgroundColor, opacity: disabled ? 0.5 : pressed ? 0.8 : 1 }]}>
+      <Ionicons accessible={false} name={icon} size={19} color={color} />
+      <Text style={[styles.buttonText, { color }]}>{title}</Text>
     </Pressable>
   )
 }

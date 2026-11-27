@@ -22,6 +22,6 @@ export function SecretaryScreen() {
     {open.length === 0 && <Label tone="muted">No outstanding tasks.</Label>}
     {open.map(t => <Card key={t.id}><Label variant="heading">{t.title}</Label><Label tone={t.due && t.due < today ? 'danger' : 'muted'}>{t.due ? 'Due ' + t.due : 'No deadline'} · {t.source}</Label><Action title="Complete" icon="checkmark-outline" onPress={() => change(d => ({ ...d, tasks: d.tasks.map(x => x.id === t.id ? { ...x, done: true } : x) }))} /></Card>)}
     <Label variant="heading">Completed · {done.length}</Label>
-    {done.map(t => <Card key={t.id}><Label>{t.title}</Label><Action title="Reopen" icon="refresh-outline" onPress={() => change(d => ({ ...d, tasks: d.tasks.map(x => x.id === t.id ? { ...x, done: false } : x) }))} /><Action title="Delete" icon="trash-outline" onPress={() => change(d => ({ ...d, tasks: d.tasks.filter(x => x.id !== t.id) }))} /></Card>)}
+    {done.map(t => <Card key={t.id}><Label>{t.title}</Label><Action variant="secondary" title="Reopen" icon="refresh-outline" onPress={() => change(d => ({ ...d, tasks: d.tasks.map(x => x.id === t.id ? { ...x, done: false } : x) }))} /><Action variant="danger" title="Delete" icon="trash-outline" onPress={() => change(d => ({ ...d, tasks: d.tasks.filter(x => x.id !== t.id) }))} /></Card>)}
   </Screen>
 }
