@@ -3,4 +3,8 @@ export type StudioRoutes = {
   Settings: undefined
   Meetings: undefined
   MeetingDetails: { meetingId: string }
+  Capture: undefined
+  Secretary: undefined
+  Padel: undefined
+  AmpCoreX: undefined
 }
