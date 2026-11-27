@@ -2,7 +2,7 @@ name: Build iPhone IPA
 
 on:
   push:
-    branches: [feat/ios-app-foundation]
+    branches: [feat/ios-app-foundation, feat/studio-five-modules]
   workflow_dispatch:
 
 permissions:
@@ -42,6 +42,7 @@ jobs:
           npm run typecheck
           npm run lint
           npm test
+          if [ -f backend/server.test.mjs ]; then node --test backend/server.test.mjs; fi
           npx expo install --check
 
       - name: Generate native project and install pods

@@ -1,0 +1,33 @@
+name: Verify five-module browser preview
+on:
+  push:
+    branches: [feat/studio-five-modules]
+  pull_request:
+    branches: [feat/ios-app-foundation]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck && npm run lint && npm test && node --test backend/server.test.mjs
+      - run: npx expo install --check
+      - run: npm run build:web
+        env:
+          OMAR_WEB_BASE_PATH: ''
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Five-module-web-preview
+          path: dist/web
+          if-no-files-found: error
