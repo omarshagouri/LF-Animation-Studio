@@ -54,14 +54,20 @@ jobs:
 
       - name: Archive Release for iPhone
         run: |
-          xcodebuild archive \
+          set -o pipefail
+          if ! xcodebuild archive \
             -workspace ios/OmarStudio.xcworkspace \
             -scheme OmarStudio \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/OmarStudio.xcarchive" \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO 2>&1 | tee "$RUNNER_TEMP/omar-archive.log"; then
+            grep -E '(^|[[:space:]])(fatal )?error:' "$RUNNER_TEMP/omar-archive.log" | tail -20 | while IFS= read -r line; do
+              printf '::error::%s\n' "$line"
+            done || true
+            exit 1
+          fi
 
       - name: Validate and package iPhone application
         run: |
