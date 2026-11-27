@@ -21,7 +21,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run typecheck && npm run lint && npm test && node --test backend/server.test.mjs
+      - run: npm run typecheck && npm run lint && npm test && node --test backend/*.test.mjs
       - run: EXPO_OFFLINE=1 npx expo install --check
       - run: npm ls --all > /dev/null
       - run: npm run build:web

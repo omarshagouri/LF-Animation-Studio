@@ -37,9 +37,9 @@ async function withServer(env, options, testServer) {
       method: 'POST',
       headers: {
         Authorization: 'Bearer ' + token,
-        ...(input instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+        ...(input instanceof FormData ? {} : { 'Content-Type': input instanceof Blob ? input.type : 'application/json' }),
       },
-      body: input instanceof FormData ? input : JSON.stringify(input),
+      body: input instanceof FormData || input instanceof Blob ? input : JSON.stringify(input),
     }))
   } finally {
     await new Promise(resolve => server.close(resolve))
@@ -113,5 +113,23 @@ test('mail deduplicates confirmed delivery and blocks uncertain retries', async 
     assert.equal((await post('/v1/mail', { ...payload, title: 'Second message' })).status, 504)
     assert.equal((await post('/v1/mail', { ...payload, title: 'Second message' })).status, 409)
     assert.equal(sent, 2)
+  })
+})
+
+test('Padel extraction rejects other uploads and returns only a reviewable draft', async () => {
+  let requested = false
+  await withServer(ai, { fetchProvider: async (url, request) => {
+    requested = true
+    assert.equal(url, 'https://api.openai.com/v1/chat/completions')
+    const message = JSON.parse(request.body).messages[1]
+    assert.match(message.content[0].image_url.url, /^data:image\/png;base64,/)
+    return Response.json({ choices: [{ message: { content: '{"ourScore":6,"theirScore":null,"needsReview":false}' } }] })
+  } }, async post => {
+    assert.equal((await post('/v1/padel/extract', new Blob(['not a png'], { type: 'image/png' }))).status, 400)
+    assert.equal(requested, false)
+    const header = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])
+    assert.deepEqual(await (await post('/v1/padel/extract', new Blob([header], { type: 'image/png' }))).json(), {
+      ourScore: 6, theirScore: null, needsReview: true,
+    })
   })
 })

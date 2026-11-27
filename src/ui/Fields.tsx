@@ -19,7 +19,7 @@ export function Choice<T extends string>({ label, choices, value, onChange }: {
       {choices.map(choice => {
         const selected = choice === value
         return <Pressable key={choice} accessibilityRole="radio" accessibilityLabel={label + ': ' + choice}
-          accessibilityState={{ checked: selected }} onPress={() => onChange(choice)}
+          aria-checked={selected} onPress={() => onChange(choice)}
           style={[styles.choice, { backgroundColor: selected ? colors.tint : colors.background, borderColor: selected ? colors.accent : colors.border }]}>
           <Text style={{ color: selected ? colors.accent : colors.text, fontWeight: selected ? '600' : '400' }}>{choice}</Text>
         </Pressable>

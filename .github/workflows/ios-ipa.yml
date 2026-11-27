@@ -42,7 +42,7 @@ jobs:
           npm run typecheck
           npm run lint
           npm test
-          if [ -f backend/server.test.mjs ]; then node --test backend/server.test.mjs; fi
+          if [ -f backend/server.test.mjs ]; then node --test backend/*.test.mjs; fi
           EXPO_OFFLINE=1 npx expo install --check
           npm ls --all > /dev/null
 
